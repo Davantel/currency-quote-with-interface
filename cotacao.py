@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import tkinter as tk
-from tkinter import Tk, StringVar, ttk
+from tkinter import Tk, StringVar, ttk, messagebox
 import customtkinter as tkc
 from PIL import Image, ImageTk
 from grafico import *
@@ -11,23 +11,28 @@ from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
 from sms import *
 
+
+
 urls = ['https://www.google.com/search?q=cota%C3%A7%C3%A3o+dolar','https://www.google.com/search?q=bitcoin+dolar', 'https://www.google.com/search?q=ethereum+dolar', 'https://www.google.com/search?q=cardano+dolar', 'https://brapi.dev/api/quote/PETR4%2CVALE3%2CWEGE3%2CKLBN4%2CBBAS3']
 
 def cotacao(url):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
     try:
-        response = requests.get(url, headers=headers)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        cotacao = soup.find('span', {'class': 'pclqee'}).text
-        nome_moeda = soup.find('span',{'class': "wUrVib OSrXXb"}).text
+        try:
+            response = requests.get(url, headers=headers)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            cotacao = soup.find('span', {'class': 'pclqee'}).text
+            nome_moeda = soup.find('span',{'class': "Z4Cazf OSrXXb"}).text
 
-        return nome_moeda[10:] + ' ' + cotacao + ' ' + 'USD'
+            return nome_moeda[10:] + ' ' + cotacao + ' ' + 'USD'
     
-    except:
-        cotacao = soup.find('span', {'class': 'DFlfde SwHCTb'}).text
-        nome_moeda = soup.find('span',{'class':'vLqKYe'}).text
-        
-        return nome_moeda[:5] + ' ' + cotacao + ' ' + 'USD'
+        except:
+            cotacao = soup.find('span', {'class': 'DFlfde SwHCTb'}).text
+            nome_moeda = soup.find('span',{'class':'vLqKYe'}).text
+            
+            return nome_moeda[:5] + ' ' + cotacao + ' ' + 'USD'
+    except Exception:
+        return 'Erro'
 
 def cotacao_acoes(url):
     lista = []
@@ -53,7 +58,14 @@ def atualizar_cotacao():
         acao = cotacao_acoes(urls[-1])
         for i in acao:
             cotacoes.append(i)
-    label_cotacao.configure(text='\n'.join(cotacoes))
+
+    # Mensagem de erro caso de algum problema na execução
+    if 'Erro' in cotacoes:
+        messagebox.showerror("Erro", "Erro nas Variaveis do Soup!")
+        label_cotacao.configure(text='')
+
+    else:
+        label_cotacao.configure(text='\n'.join(cotacoes))
 
     valore_para_sms = label_cotacao._text
 
@@ -65,6 +77,9 @@ def atualizar_cotacao():
 #habilitar botao sms depois de clicar no botao de cotação
 def habilitar_btn_sms():
     btn_sms.configure(state=tkc.NORMAL)
+
+def mensagem_sms():
+    messagebox.showinfo("Envio de SMS", "SMS enviado com sucesso!")
 
 
 app = tkc.CTk()
@@ -142,14 +157,13 @@ def verificar_botao():
 btn_atualizar = tkc.CTkButton(app, text="Buscar cotação", text_color='white', font=('Ivy', 15, 'bold'), corner_radius=10, compound='top', fg_color=('#1cacfc'), command=lambda:[atualizar_cotacao(), habilitar_btn_sms()])
 btn_atualizar.place(x=70,y=210)
 
-btn_sms = tkc.CTkButton(app, text="Enviar SMS", text_color='white', font=('Ivy', 15, 'bold'), corner_radius=10, compound='top', fg_color=('#1cacfc'), command=lambda:[atualizar_cotacao(), enviar_mensagem(label_cotacao._text)], state=tkc.DISABLED, text_color_disabled='grey')
+btn_sms = tkc.CTkButton(app, text="Enviar SMS", text_color='white', font=('Ivy', 15, 'bold'), corner_radius=10, compound='top', fg_color=('#1cacfc'), command=lambda:[atualizar_cotacao(), enviar_mensagem(label_cotacao._text), mensagem_sms()], state=tkc.DISABLED, text_color_disabled='grey')
 btn_sms.place(x=240,y=210)
 
 #label pra imprimir
 label_cotacao = tkc.CTkLabel(app, text="", text_color='white', font=('Ivy', 20), width=410, height=180, fg_color=('black', '#323232'), corner_radius=8)
 label_cotacao.place(x=20,y=260)
 
-print(label_cotacao._text)
 
 verificar_botao()
 app.mainloop()
